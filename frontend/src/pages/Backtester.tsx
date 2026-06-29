@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiService, type BacktestResponse, type BacktestFixture } from '../services/api';
-import { Calendar, Award, CheckCircle2, XCircle, Loader2, Sparkles, Search, Info, HelpCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, Loader2, Sparkles, Search, Info } from 'lucide-react';
 
 export const Backtester: React.FC = () => {
   const [years, setYears] = useState<number[]>([]);

@@ -36,7 +36,6 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ label, color, value, te
   }, []);
 
   const accent = color === 'gold' ? 'border-brand-gold text-brand-goldLight' : 'border-brand-accent text-brand-accentLight';
-  const ring   = color === 'gold' ? 'focus:border-brand-gold ring-brand-gold/20' : 'focus:border-brand-accent ring-brand-accent/20';
 
   return (
     <div ref={ref} className="w-full md:w-5/12 flex flex-col gap-1 relative">
@@ -92,18 +91,6 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ label, color, value, te
     </div>
   );
 };
-
-/* ─────────────── Stat badge ─────────────── */
-function StatBadge({ label, val, winner }: { label: string; val: string; winner: boolean }) {
-  return (
-    <div className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl border transition-all ${
-      winner ? 'border-brand-gold/40 bg-brand-gold/8' : 'border-dark-border/40 bg-dark-bg/20'
-    }`}>
-      <span className="text-[9px] font-bold uppercase tracking-widest text-dark-muted">{label}</span>
-      <span className={`text-lg font-black ${winner ? 'text-brand-goldLight' : 'text-dark-text'}`}>{val}</span>
-    </div>
-  );
-}
 
 /* ─────────────── W/D/L bar ─────────────── */
 function WDLBar({ wins, draws, losses, total, teamColor }: { wins: number; draws: number; losses: number; total: number; teamColor: string }) {
@@ -425,7 +412,10 @@ export const TeamComparison: React.FC = () => {
                           </Pie>
                           <Tooltip
                             contentStyle={{ backgroundColor: '#0C1122', borderColor: '#1E293B', borderRadius: '12px' }}
-                            formatter={(v: number) => [`${v} match${v !== 1 ? 'es' : ''}`, '']}
+                            formatter={(value: unknown) => {
+                              const numericValue = Number(Array.isArray(value) ? value[0] : value ?? 0);
+                              return [`${numericValue} match${numericValue !== 1 ? 'es' : ''}`, ''];
+                            }}
                           />
                           <Legend iconType="circle" wrapperStyle={{ fontSize: '10px' }} />
                         </PieChart>

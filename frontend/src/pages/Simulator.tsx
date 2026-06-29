@@ -642,7 +642,7 @@ export const Simulator: React.FC = () => {
 
           {/* Bracket columns + connectors */}
           <div className="flex" style={{ height: TOTAL_H }}>
-            {allRounds.map(([, matches, setter], ri) => {
+            {allRounds.map(([, matches], ri) => {
               const roundKey = MOBILE_TABS[ri];
               return (
                 <React.Fragment key={ri}>
