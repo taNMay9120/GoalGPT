@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { apiService, type MatchPredictionResponse } from '../services/api';
 import { Send, ChevronRight, HelpCircle, Loader2 } from 'lucide-react';
+import { ComparisonDetails } from '../components/ComparisonDetails';
+import { SearchDropdown } from '../components/SearchDropdown';
 
 const POPULAR_TEAMS = [
   'Argentina', 'Brazil', 'France', 'England', 'Spain',
@@ -60,19 +62,14 @@ export const Predictor: React.FC = () => {
 
           {/* Team 1 Selector */}
           <div className="md:col-span-3 flex flex-col gap-1.5">
-            <label id="label-team1" htmlFor="select-team1" className="text-xs font-semibold uppercase text-brand-goldLight tracking-wider">
-              Home Team (Team 1)
-            </label>
-            <select
-              id="select-team1"
+            <SearchDropdown
+              label="Home Team (Team 1)"
+              color="gold"
               value={team1}
-              onChange={(e) => setTeam1(e.target.value)}
-              className="bg-dark-bg border border-dark-border text-dark-text rounded-xl p-3 focus:outline-none focus:border-brand-gold transition-colors"
-            >
-              {(teamsList.length > 0 ? teamsList : POPULAR_TEAMS).map((t) => (
-                <option key={`t1-${t}`} value={t}>{t}</option>
-              ))}
-            </select>
+              teams={teamsList.length > 0 ? teamsList : POPULAR_TEAMS}
+              onChange={setTeam1}
+              exclude={team2}
+            />
           </div>
 
           {/* VS Divider */}
@@ -82,19 +79,14 @@ export const Predictor: React.FC = () => {
 
           {/* Team 2 Selector */}
           <div className="md:col-span-3 flex flex-col gap-1.5">
-            <label id="label-team2" htmlFor="select-team2" className="text-xs font-semibold uppercase text-brand-accentLight tracking-wider">
-              Away Team (Team 2)
-            </label>
-            <select
-              id="select-team2"
+            <SearchDropdown
+              label="Away Team (Team 2)"
+              color="green"
               value={team2}
-              onChange={(e) => setTeam2(e.target.value)}
-              className="bg-dark-bg border border-dark-border text-dark-text rounded-xl p-3 focus:outline-none focus:border-brand-accent transition-colors"
-            >
-              {(teamsList.length > 0 ? teamsList : POPULAR_TEAMS).map((t) => (
-                <option key={`t2-${t}`} value={t}>{t}</option>
-              ))}
-            </select>
+              teams={teamsList.length > 0 ? teamsList : POPULAR_TEAMS}
+              onChange={setTeam2}
+              exclude={team1}
+            />
           </div>
 
         </div>
@@ -132,90 +124,105 @@ export const Predictor: React.FC = () => {
         const maxProb = Math.max(t1Prob, t2Prob, drawProb);
         
         return (
-          <div id="prediction-result" className="glass-panel p-6 animate-float">
-            <h2 className="text-xl font-bold mb-6 flex items-center justify-between border-b border-dark-border pb-4">
-              <span>Prediction Analysis</span>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded bg-brand-gold/15 text-brand-goldLight border border-brand-gold/20">
-                Model Verdict: {prediction.winner}
-              </span>
-            </h2>
+          <>
+            <div id="prediction-result" className="glass-panel p-6 animate-float mb-8">
+              <h2 className="text-xl font-bold mb-6 flex items-center justify-between border-b border-dark-border pb-4">
+                <span>Prediction Analysis</span>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded bg-brand-gold/15 text-brand-goldLight border border-brand-gold/20">
+                  Model Verdict: {prediction.winner}
+                </span>
+              </h2>
 
-            {/* Probability Bars */}
-            <div className="space-y-4 mb-6">
-              <h3 className="text-xs font-semibold uppercase text-dark-muted tracking-wider mb-2">
-                Outcome Probabilities
-              </h3>
+              {/* Probability Bars */}
+              <div className="space-y-4 mb-6">
+                <h3 className="text-xs font-semibold uppercase text-dark-muted tracking-wider mb-2">
+                  Outcome Probabilities
+                </h3>
 
-              {/* Team 1 Win Probability */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium">{team1} Win</span>
-                  <span className="font-semibold text-brand-goldLight">{(t1Prob * 100).toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-dark-bg rounded-full h-3.5 border border-dark-border overflow-hidden">
-                  <div
-                    className="bg-brand-gold h-full rounded-full transition-all duration-500"
-                    style={{ width: `${t1Prob * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Draw Probability */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium">Draw</span>
-                  <span className="font-semibold text-dark-muted">{(drawProb * 100).toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-dark-bg rounded-full h-3.5 border border-dark-border overflow-hidden">
-                  <div
-                    className="bg-dark-border h-full rounded-full transition-all duration-500"
-                    style={{ width: `${drawProb * 100}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Team 2 Win Probability */}
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-medium">{team2} Win</span>
-                  <span className="font-semibold text-brand-accentLight">{(t2Prob * 100).toFixed(0)}%</span>
-                </div>
-                <div className="w-full bg-dark-bg rounded-full h-3.5 border border-dark-border overflow-hidden">
-                  <div
-                    className="bg-brand-accent h-full rounded-full transition-all duration-500"
-                    style={{ width: `${t2Prob * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Confidence Meter */}
-            <div className="mb-6 bg-dark-bg/60 border border-dark-border rounded-xl p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded bg-brand-gold/10">
-                  <HelpCircle className="h-5 w-5 text-brand-goldLight" />
-                </div>
+                {/* Team 1 Win Probability */}
                 <div>
-                  <h4 className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Confidence Level</h4>
-                  <p className="text-sm font-bold">
-                    {t1Prob > 0.5 || t2Prob > 0.5 ? 'High Confidence' : 'Moderate Confidence'}
-                  </p>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">{team1} Win</span>
+                    <span className="font-semibold text-brand-goldLight">{(t1Prob * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-dark-bg rounded-full h-3.5 border border-dark-border overflow-hidden">
+                    <div
+                      className="bg-brand-gold h-full rounded-full transition-all duration-500"
+                      style={{ width: `${t1Prob * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Draw Probability */}
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">Draw</span>
+                    <span className="font-semibold text-dark-muted">{(drawProb * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-dark-bg rounded-full h-3.5 border border-dark-border overflow-hidden">
+                    <div
+                      className="bg-dark-border h-full rounded-full transition-all duration-500"
+                      style={{ width: `${drawProb * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Team 2 Win Probability */}
+                <div>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="font-medium">{team2} Win</span>
+                    <span className="font-semibold text-brand-accentLight">{(t2Prob * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-dark-bg rounded-full h-3.5 border border-dark-border overflow-hidden">
+                    <div
+                      className="bg-brand-accent h-full rounded-full transition-all duration-500"
+                      style={{ width: `${t2Prob * 100}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="text-2xl font-black text-gradient">
-                {maxProb.toFixed(2)}
+
+              {/* Confidence Meter */}
+              <div className="mb-6 bg-dark-bg/60 border border-dark-border rounded-xl p-4 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded bg-brand-gold/10">
+                    <HelpCircle className="h-5 w-5 text-brand-goldLight" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold text-dark-muted uppercase tracking-wider">Confidence Level</h4>
+                    <p className="text-sm font-bold">
+                      {t1Prob > 0.5 || t2Prob > 0.5 ? 'High Confidence' : 'Moderate Confidence'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-2xl font-black text-gradient">
+                  {maxProb.toFixed(2)}
+                </div>
+              </div>
+
+              {/* Prediction Explanation */}
+              <div className="p-4 bg-dark-bg/40 border border-dark-border rounded-xl">
+                <h4 className="text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">Explanation</h4>
+                <p className="text-sm text-dark-text/90 leading-relaxed flex items-start gap-2">
+                  <ChevronRight className="h-4 w-4 mt-0.5 text-brand-goldLight shrink-0" />
+                  {prediction.explanation}
+                </p>
               </div>
             </div>
 
-            {/* Prediction Explanation */}
-            <div className="p-4 bg-dark-bg/40 border border-dark-border rounded-xl">
-              <h4 className="text-xs font-semibold text-dark-muted uppercase tracking-wider mb-2">Explanation</h4>
-              <p className="text-sm text-dark-text/90 leading-relaxed flex items-start gap-2">
-                <ChevronRight className="h-4 w-4 mt-0.5 text-brand-goldLight shrink-0" />
-                {prediction.explanation}
-              </p>
-            </div>
-          </div>
+            <section className="glass-panel p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-dark-muted font-semibold">Comparison Summary</p>
+                  <h2 className="text-xl font-bold">Statistical Data</h2>
+                </div>
+                <div className="text-sm text-dark-muted">
+                  Includes the same head-to-head and model feature details used by the comparison page.
+                </div>
+              </div>
+              <ComparisonDetails team1={team1} team2={team2} />
+            </section>
+          </>
         );
       })()}
     </div>

@@ -47,10 +47,10 @@ export const Home: React.FC = () => {
         </Link>
         <Link
           id="btn-go-compare"
-          to="/compare"
+          to="/predict"
           className="px-8 py-3.5 rounded-xl font-bold bg-dark-card border border-dark-border text-dark-text hover:bg-dark-border/40 transition-all duration-200"
         >
-          Compare Teams
+          Predict & Compare
         </Link>
       </div>
 

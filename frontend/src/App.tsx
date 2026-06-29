@@ -3,7 +3,7 @@ import { Home } from './pages/Home';
 import { Predictor } from './pages/Predictor';
 import { TeamComparison } from './pages/TeamComparison';
 import { AboutModel } from './pages/AboutModel';
-import { Trophy, Compass, ArrowLeftRight, HelpCircle, Play, BarChart3 } from 'lucide-react';
+import { Trophy, Compass, HelpCircle, Play, BarChart3 } from 'lucide-react';
 import { Simulator } from './pages/Simulator';
 import { Backtester } from './pages/Backtester';
 
@@ -36,19 +36,6 @@ function App() {
               >
                 <Compass className="h-4 w-4" />
                 <span className="hidden sm:inline">Predictor</span>
-              </NavLink>
-
-              <NavLink
-                to="/compare"
-                className={({ isActive }) =>
-                  `flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${isActive
-                    ? 'bg-brand-gold/15 text-brand-goldLight border border-brand-gold/25'
-                    : 'text-dark-muted hover:text-dark-text border border-transparent'
-                  }`
-                }
-              >
-                <ArrowLeftRight className="h-4 w-4" />
-                <span className="hidden sm:inline">Compare</span>
               </NavLink>
 
               <NavLink
