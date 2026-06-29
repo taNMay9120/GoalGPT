@@ -97,6 +97,9 @@
   padding: 0.75rem;
   transition: all 0.2s ease-in-out;
   cursor: pointer;
+  /* Ensure native select dropdown appears above nearby cards/overlays */
+  position: relative;
+  z-index: 50;
 
   &:focus {
     outline: none;

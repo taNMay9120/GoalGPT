@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { apiService, type TeamStats, type H2HResponse } from '../services/api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -22,6 +23,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ label, color, value, te
   const [open, setOpen]   = useState(false);
   const [query, setQuery] = useState('');
   const ref = useRef<HTMLDivElement>(null);
+  const [portalRect, setPortalRect] = useState<{ left: number; top: number; width: number } | null>(null);
 
   const filtered = teams.filter(
     t => t !== exclude && t.toLowerCase().includes(query.toLowerCase())
@@ -35,7 +37,63 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ label, color, value, te
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Compute portal position when opening
+  useEffect(() => {
+    if (!open) return;
+    const compute = () => {
+      const r = ref.current?.getBoundingClientRect();
+      if (r) setPortalRect({ left: Math.round(r.left), top: Math.round(r.bottom + 4), width: Math.round(r.width) });
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    window.addEventListener('scroll', compute, true);
+    return () => {
+      window.removeEventListener('resize', compute);
+      window.removeEventListener('scroll', compute, true);
+    };
+  }, [open]);
+
   const accent = color === 'gold' ? 'border-brand-gold text-brand-goldLight' : 'border-brand-accent text-brand-accentLight';
+
+  // Panel rendered into body to avoid clipping by ancestor overflow/stacking contexts
+  const panel = open && portalRect ? (
+    createPortal(
+      <div
+        style={{ position: 'absolute', left: portalRect.left + 'px', top: portalRect.top + 'px', width: portalRect.width + 'px', zIndex: 9999 }}
+        className="bg-dark-card border border-dark-border rounded-xl shadow-2xl overflow-hidden"
+      >
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-dark-border/60">
+          <Search className="h-3.5 w-3.5 text-dark-muted shrink-0" />
+          <input
+            autoFocus
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search team…"
+            className={`flex-1 bg-transparent text-sm text-dark-text placeholder-dark-muted/50 outline-none focus:ring-0 border-0`}
+          />
+        </div>
+        <ul className="max-h-52 overflow-y-auto py-1">
+          {filtered.length === 0 ? (
+            <li className="px-4 py-3 text-xs text-dark-muted text-center">No teams found</li>
+          ) : filtered.map(t => (
+            <li key={t}>
+              <button
+                onClick={() => { onChange(t); setOpen(false); setQuery(''); }}
+                className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
+                  t === value
+                    ? `bg-dark-border/50 font-bold ${color === 'gold' ? 'text-brand-goldLight' : 'text-brand-accentLight'}`
+                    : 'text-dark-text hover:bg-dark-border/30'
+                }`}
+              >
+                {t}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>,
+      document.body,
+    )
+  ) : null;
 
   return (
     <div ref={ref} className="w-full md:w-5/12 flex flex-col gap-1 relative">
@@ -52,42 +110,7 @@ const SearchDropdown: React.FC<SearchDropdownProps> = ({ label, color, value, te
         <svg className={`h-4 w-4 text-dark-muted transition-transform ${open ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
       </button>
 
-      {/* Dropdown panel */}
-      {open && (
-        <div className="absolute top-[calc(100%+4px)] left-0 right-0 z-50 bg-dark-card border border-dark-border rounded-xl shadow-2xl overflow-hidden">
-          {/* Search input */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-dark-border/60">
-            <Search className="h-3.5 w-3.5 text-dark-muted shrink-0" />
-            <input
-              autoFocus
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search team…"
-              className={`flex-1 bg-transparent text-sm text-dark-text placeholder-dark-muted/50 outline-none focus:ring-0 border-0`}
-            />
-          </div>
-
-          {/* Options list */}
-          <ul className="max-h-52 overflow-y-auto py-1">
-            {filtered.length === 0 ? (
-              <li className="px-4 py-3 text-xs text-dark-muted text-center">No teams found</li>
-            ) : filtered.map(t => (
-              <li key={t}>
-                <button
-                  onClick={() => { onChange(t); setOpen(false); setQuery(''); }}
-                  className={`w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
-                    t === value
-                      ? `bg-dark-border/50 font-bold ${color === 'gold' ? 'text-brand-goldLight' : 'text-brand-accentLight'}`
-                      : 'text-dark-text hover:bg-dark-border/30'
-                  }`}
-                >
-                  {t}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {panel}
     </div>
   );
 };
