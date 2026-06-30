@@ -169,6 +169,53 @@ class MatchPredictionResponse(BaseModel):
     probabilities: dict
     explanation: str
 
+from typing import List, Optional, Dict, Any
+
+class ArticleSource(BaseModel):
+    name: str
+
+class NewsArticle(BaseModel):
+    title: str
+    description: Optional[str] = None
+    source: ArticleSource
+    urlToImage: Optional[str] = None
+    url: str
+
+class NewsResponse(BaseModel):
+    articles: List[NewsArticle]
+
+class FixtureStatus(BaseModel):
+    short: str
+    elapsed: Optional[int] = None
+
+class FixtureDetails(BaseModel):
+    id: int
+    status: FixtureStatus
+
+class TeamInfo(BaseModel):
+    name: str
+    logo: str
+
+class MatchTeams(BaseModel):
+    home: TeamInfo
+    away: TeamInfo
+
+class MatchGoals(BaseModel):
+    home: Optional[int] = None
+    away: Optional[int] = None
+
+class LiveMatchItem(BaseModel):
+    fixture: FixtureDetails
+    league: Dict[str, Any]
+    teams: MatchTeams
+    goals: MatchGoals
+    events: Optional[List[Dict[str, Any]]] = None
+    lineups: Optional[List[Dict[str, Any]]] = None
+    statistics: Optional[List[Dict[str, Any]]] = None
+
+class LiveScoresResponse(BaseModel):
+    response: List[LiveMatchItem]
+
 @app.get("/")
 def read_root():
     return {
@@ -177,7 +224,7 @@ def read_root():
         "version": "1.0.0"
     }
 
-@app.get("/api/live-scores")
+@app.get("/api/live-scores", response_model=LiveScoresResponse)
 def get_live_scores():
     """
     Fetches live matches from API-Football. 
@@ -229,7 +276,7 @@ def get_live_scores():
             ]
         }
 
-@app.get("/api/match/{fixture_id}")
+@app.get("/api/match/{fixture_id}", response_model=LiveScoresResponse)
 def get_match_details(fixture_id: int):
     """
     Fetches detailed match statistics, lineups, and events for a specific fixture.
@@ -264,7 +311,7 @@ def get_match_details(fixture_id: int):
         print(f"Error fetching match details: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch match details from API")
 
-@app.get("/api/news")
+@app.get("/api/news", response_model=NewsResponse)
 def get_football_news():
     """
     Fetches football news from NewsAPI.

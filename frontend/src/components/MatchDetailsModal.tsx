@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Clock, AlertCircle } from 'lucide-react';
+import { apiService } from '../services/api';
 
 interface MatchDetailsModalProps {
   fixtureId: number;
@@ -15,8 +16,7 @@ export const MatchDetailsModal: React.FC<MatchDetailsModalProps> = ({ fixtureId,
     const fetchDetails = async () => {
       try {
         setLoading(true);
-        const res = await fetch(`http://localhost:8000/api/match/${fixtureId}`);
-        const data = await res.json();
+        const data = await apiService.getMatchDetails(fixtureId);
         if (data.response && data.response.length > 0) {
           setDetails(data.response[0]);
         }

@@ -165,5 +165,38 @@ export const apiService = {
       throw new Error(`Failed to fetch H2H for ${team1} vs ${team2}: ${response.status}`);
     }
     return response.json();
+  },
+
+  /**
+   * Fetches live scores from the backend.
+   */
+  async getLiveScores(): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/live-scores`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch live scores: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  /**
+   * Fetches football news from the backend.
+   */
+  async getNews(): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/news`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch news: ${response.status}`);
+    }
+    return response.json();
+  },
+
+  /**
+   * Fetches detailed match statistics, lineups, and events.
+   */
+  async getMatchDetails(fixtureId: number): Promise<any> {
+    const response = await fetch(`${API_BASE_URL}/api/match/${fixtureId}`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch match details: ${response.status}`);
+    }
+    return response.json();
   }
 };

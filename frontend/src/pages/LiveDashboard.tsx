@@ -3,6 +3,7 @@ import { Activity, Globe } from 'lucide-react';
 import { LiveMatchCard } from '../components/LiveMatchCard';
 import { NewsFeed } from '../components/NewsFeed';
 import { MatchDetailsModal } from '../components/MatchDetailsModal';
+import { apiService } from '../services/api';
 
 export const LiveDashboard: React.FC = () => {
   const [matches, setMatches] = useState<any[]>([]);
@@ -16,8 +17,7 @@ export const LiveDashboard: React.FC = () => {
       try {
         setLoading(true);
         // Fetch Live Scores
-        const matchRes = await fetch('http://localhost:8000/api/live-scores');
-        const matchData = await matchRes.json();
+        const matchData = await apiService.getLiveScores();
         if (matchData.response) {
           setMatches(matchData.response);
         } else {
@@ -25,8 +25,7 @@ export const LiveDashboard: React.FC = () => {
         }
 
         // Fetch News
-        const newsRes = await fetch('http://localhost:8000/api/news');
-        const newsData = await newsRes.json();
+        const newsData = await apiService.getNews();
         if (newsData.articles) {
           setNews(newsData.articles);
         }
