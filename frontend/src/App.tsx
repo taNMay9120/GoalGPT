@@ -6,6 +6,8 @@ import { AboutModel } from './pages/AboutModel';
 import { Trophy, Compass, HelpCircle, Play, BarChart3 } from 'lucide-react';
 import { Simulator } from './pages/Simulator';
 import { Backtester } from './pages/Backtester';
+import { LiveDashboard } from './pages/LiveDashboard';
+import { Activity } from 'lucide-react';
 
 function App() {
   return (
@@ -36,6 +38,20 @@ function App() {
               >
                 <Compass className="h-4 w-4" />
                 <span className="hidden sm:inline">Predictor</span>
+              </NavLink>
+
+              <NavLink
+                to="/live"
+                className={({ isActive }) =>
+                  `flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${isActive
+                    ? 'bg-red-500/15 text-red-400 border border-red-500/25'
+                    : 'text-dark-muted hover:text-dark-text border border-transparent'
+                  }`
+                }
+              >
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline">Live</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse hidden sm:block"></span>
               </NavLink>
 
               <NavLink
@@ -85,6 +101,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/predict" element={<Predictor />} />
+            <Route path="/live" element={<LiveDashboard />} />
             <Route path="/compare" element={<TeamComparison />} />
             <Route path="/simulate" element={<Simulator />} />
             <Route path="/backtest" element={<Backtester />} />

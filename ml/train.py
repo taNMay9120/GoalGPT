@@ -39,6 +39,9 @@ def main():
     feature_cols = [
         'rank_difference',
         'elo_difference',
+        'att_difference',
+        'mid_difference',
+        'def_difference',
         'form_difference',
         'gd_difference',
         'h2h_home_win_rate',

@@ -5,6 +5,14 @@ import pandas as pd
 import numpy as np
 import os
 import joblib
+import requests
+from dotenv import load_dotenv
+from datetime import datetime, timedelta
+
+load_dotenv()
+API_FOOTBALL_KEY = os.getenv("API_FOOTBALL_KEY")
+API_FOOTBALL_HOST = "v3.football.api-sports.io"
+NEWS_API_KEY = os.getenv("NEWS_API_KEY")
 
 app = FastAPI(
     title="GoalGPT API",
@@ -32,6 +40,13 @@ scaler = None
 df_matches = None
 team_stats = {}
 name_lookup = {}
+
+# Simple in-memory cache to prevent exceeding API-Football limits (100/day)
+cache = {
+    "live-scores": {"data": None, "timestamp": None},
+    "news": {"data": None, "timestamp": None}
+}
+CACHE_TTL_MINUTES = 5
 
 def clean_team_name(name: str) -> str:
     """
@@ -87,13 +102,19 @@ def startup_load_artifacts():
             'elo': float(row['home_elo']),
             'rank': float(row['home_rank']),
             'form': float(row['home_form']),
-            'gd': float(row['home_gd'])
+            'gd': float(row['home_gd']),
+            'att': float(row['home_att']),
+            'mid': float(row['home_mid']),
+            'def': float(row['home_def'])
         }
         team_stats[row['away_team']] = {
             'elo': float(row['away_elo']),
             'rank': float(row['away_rank']),
             'form': float(row['away_form']),
-            'gd': float(row['away_gd'])
+            'gd': float(row['away_gd']),
+            'att': float(row['away_att']),
+            'mid': float(row['away_mid']),
+            'def': float(row['away_def'])
         }
         
     # Build a lowercase lookup mapping to support case-insensitive team queries
@@ -155,6 +176,109 @@ def read_root():
         "version": "1.0.0"
     }
 
+@app.get("/api/live-scores")
+def get_live_scores():
+    """
+    Fetches live matches from API-Football. 
+    Implements a 5-minute cache to protect rate limits.
+    """
+    now = datetime.now()
+    if cache["live-scores"]["data"] and cache["live-scores"]["timestamp"]:
+        if (now - cache["live-scores"]["timestamp"]) < timedelta(minutes=CACHE_TTL_MINUTES):
+            return cache["live-scores"]["data"]
+            
+    if not API_FOOTBALL_KEY:
+        raise HTTPException(status_code=500, detail="API_FOOTBALL_KEY not found in backend/.env")
+        
+    url = "https://v3.football.api-sports.io/fixtures?live=all"
+    headers = {
+        "x-apisports-key": API_FOOTBALL_KEY,
+        "x-apisports-host": API_FOOTBALL_HOST
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        # Cache and return
+        cache["live-scores"]["data"] = data
+        cache["live-scores"]["timestamp"] = now
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching live scores: {e}")
+        # Return fallback mocked data if the API fails or limits are reached
+        return {
+            "response": [
+                {
+                    "fixture": {"id": 1, "status": {"short": "2H", "elapsed": 68}},
+                    "league": {"name": "World Cup - Mock Data"},
+                    "teams": {
+                        "home": {"name": "Argentina", "logo": "https://media.api-sports.io/football/teams/26.png"},
+                        "away": {"name": "France", "logo": "https://media.api-sports.io/football/teams/17.png"}
+                    },
+                    "goals": {"home": 2, "away": 1}
+                }
+            ]
+        }
+
+@app.get("/api/news")
+def get_football_news():
+    """
+    Fetches football news from NewsAPI.
+    Implements a 15-minute cache to protect rate limits.
+    """
+    now = datetime.now()
+    if cache["news"]["data"] and cache["news"]["timestamp"]:
+        if (now - cache["news"]["timestamp"]) < timedelta(minutes=15):
+            return cache["news"]["data"]
+            
+    if not NEWS_API_KEY:
+        print("NEWS_API_KEY not set. Returning mock news.")
+        return get_mock_news()
+        
+    url = f"https://newsapi.org/v2/everything?q=football&language=en&sortBy=publishedAt&pageSize=10&apiKey={NEWS_API_KEY}"
+    
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        cache["news"]["data"] = data
+        cache["news"]["timestamp"] = now
+        return data
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching news: {e}")
+        return get_mock_news()
+
+def get_mock_news():
+    return {
+        "articles": [
+            {
+                "title": "Mbappe stuns with late winner in Paris",
+                "description": "Kylian Mbappe scored a breathtaking goal in the 89th minute to secure a vital victory...",
+                "source": {"name": "BBC Sport"},
+                "urlToImage": "https://images.unsplash.com/photo-1579952363873-27f3bade9f55?q=80&w=400&auto=format&fit=crop",
+                "url": "https://bbc.com/sport/football"
+            },
+            {
+                "title": "Messi hints at potential return to boyhood club",
+                "description": "Lionel Messi has dropped a major hint about where he might end his illustrious career.",
+                "source": {"name": "Sky Sports"},
+                "urlToImage": "https://images.unsplash.com/photo-1551280857-2b9ebf262973?q=80&w=400&auto=format&fit=crop",
+                "url": "https://skysports.com/football"
+            },
+            {
+                "title": "Champions League Draw: Group of Death Revealed",
+                "description": "The latest UEFA Champions League draw has placed three heavyweights in Group F.",
+                "source": {"name": "The Athletic"},
+                "urlToImage": "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=400&auto=format&fit=crop",
+                "url": "https://theathletic.com/football"
+            }
+        ]
+    }
+
 @app.post("/api/predict", response_model=MatchPredictionResponse)
 def predict_match(request: MatchPredictionRequest):
     """
@@ -190,10 +314,13 @@ def predict_match(request: MatchPredictionRequest):
     s2 = team_stats[t2_key]
     
     # 4. Construct features matching model input columns:
-    # ['rank_difference', 'elo_difference', 'form_difference', 'gd_difference',
+    # ['rank_difference', 'elo_difference', 'att_difference', 'mid_difference', 'def_difference', 'form_difference', 'gd_difference',
     #  'h2h_home_win_rate', 'h2h_away_win_rate', 'h2h_draw_rate', 'neutral']
     rank_diff = s1['rank'] - s2['rank']
     elo_diff = s1['elo'] - s2['elo']
+    att_diff = s1['att'] - s2['att']
+    mid_diff = s1['mid'] - s2['mid']
+    def_diff = s1['def'] - s2['def']
     form_diff = s1['form'] - s2['form']
     gd_diff = s1['gd'] - s2['gd']
     
@@ -205,6 +332,9 @@ def predict_match(request: MatchPredictionRequest):
     raw_features = np.array([[
         rank_diff,
         elo_diff,
+        att_diff,
+        mid_diff,
+        def_diff,
         form_diff,
         gd_diff,
         h2h_t1,
@@ -260,15 +390,22 @@ def predict_match(request: MatchPredictionRequest):
     elif rank_diff > 0:
         reasons.append(f"{t2_key} is officially ranked higher by {abs(int(rank_diff))} spots on the FIFA ranking board")
         
+    # Squad Rating explanation (ATT vs DEF)
+    if att_diff > 3 and s1['att'] > s2['def']:
+        reasons.append(f"{t1_key}'s attacking quality (ATT: {int(s1['att'])}) could overwhelm {t2_key}'s defense (DEF: {int(s2['def'])})")
+    elif att_diff < -3 and s2['att'] > s1['def']:
+        reasons.append(f"{t2_key} possesses a significant offensive advantage (ATT: {int(s2['att'])}) against {t1_key}'s defense")
+        
+    if mid_diff > 4:
+        reasons.append(f"{t1_key} is expected to control the midfield (MID: {int(s1['mid'])} vs {int(s2['mid'])})")
+    elif mid_diff < -4:
+        reasons.append(f"{t2_key} has superior midfield strength and playmaking ability")
+        
     # Elo rating explanation
     if elo_diff > 150:
         reasons.append(f"{t1_key} has a significantly superior Elo rating (+{int(elo_diff)} pts), indicating stronger long-term performance")
-    elif elo_diff > 50:
-        reasons.append(f"{t1_key} holds a higher Elo rating (+{int(elo_diff)} pts)")
     elif elo_diff < -150:
         reasons.append(f"{t2_key} is heavily favored by Elo rating (+{abs(int(elo_diff))} pts), suggesting a higher baseline quality")
-    elif elo_diff < -50:
-        reasons.append(f"{t2_key} has a stronger Elo rating (+{abs(int(elo_diff))} pts)")
         
     # Recent Form explanation
     if form_diff > 0.4:
@@ -330,7 +467,10 @@ def get_team_details(team_name: str):
         "elo": stats['elo'],
         "rank": stats['rank'],
         "form": stats['form'],
-        "gd": stats['gd']
+        "gd": stats['gd'],
+        "att": stats['att'],
+        "mid": stats['mid'],
+        "def": stats['def']
     }
 
 @app.get("/api/h2h/{team1}/{team2}")
@@ -458,6 +598,9 @@ def backtest_tournament_year(year: int):
     feature_cols = [
         'rank_difference',
         'elo_difference',
+        'att_difference',
+        'mid_difference',
+        'def_difference',
         'form_difference',
         'gd_difference',
         'h2h_home_win_rate',

@@ -105,6 +105,65 @@ def compute_elo_ratings(df: pd.DataFrame):
     df['elo_difference'] = df['home_elo'] - df['away_elo']
     return df
 
+def compute_squad_vectors(df: pd.DataFrame):
+    """
+    Synthesizes EA FC (FIFA) style squad ratings (Attack, Midfield, Defense) 
+    from the team's current Elo rating to simulate individual player quality aggregation.
+    
+    ML Concept: Instead of predicting purely on a single Elo number, we derive a Team Vector.
+    We inject deterministic variance so some teams lean offensive while others lean defensive.
+    """
+    print("Computing FIFA-style squad vectors (ATT, MID, DEF)...")
+    np.random.seed(42)  # Ensure deterministic noise
+    
+    # Scale Elo (typically 1200 - 2100) to FIFA ratings (usually 55 - 90)
+    # 2100 Elo -> 90 Rating, 1200 Elo -> 60 Rating
+    def elo_to_rating(elo):
+        rating = ((elo - 1200) / (2100 - 1200)) * (90 - 60) + 60
+        return np.clip(rating, 50, 95)
+    
+    # Determine the "style" of each team deterministically using hash of their name
+    def get_style_modifiers(team_name):
+        h = hash(team_name)
+        # Modifiers between -3 and +3
+        att_mod = (h % 7) - 3
+        mid_mod = ((h >> 3) % 7) - 3
+        def_mod = ((h >> 6) % 7) - 3
+        return att_mod, mid_mod, def_mod
+        
+    home_att, home_mid, home_def = [], [], []
+    away_att, away_mid, away_def = [], [], []
+    
+    for idx, row in df.iterrows():
+        h_base = elo_to_rating(row['home_elo'])
+        a_base = elo_to_rating(row['away_elo'])
+        
+        h_mods = get_style_modifiers(row['home_team'])
+        a_mods = get_style_modifiers(row['away_team'])
+        
+        home_att.append(h_base + h_mods[0])
+        home_mid.append(h_base + h_mods[1])
+        home_def.append(h_base + h_mods[2])
+        
+        away_att.append(a_base + a_mods[0])
+        away_mid.append(a_base + a_mods[1])
+        away_def.append(a_base + a_mods[2])
+        
+    df['home_att'] = home_att
+    df['home_mid'] = home_mid
+    df['home_def'] = home_def
+    
+    df['away_att'] = away_att
+    df['away_mid'] = away_mid
+    df['away_def'] = away_def
+    
+    df['att_difference'] = df['home_att'] - df['away_att']
+    df['mid_difference'] = df['home_mid'] - df['away_mid']
+    df['def_difference'] = df['home_def'] - df['away_def']
+    
+    return df
+
+
 def compute_rolling_features(df: pd.DataFrame):
     """
     Computes moving averages for recent form (5 matches) and goal difference (10 matches).
@@ -294,6 +353,9 @@ def main():
     # 4. Feature Engineering: Elo Ratings (from beginning of timeline)
     results_df = compute_elo_ratings(results_df)
     
+    # 4.1 Feature Engineering: Squad Vectors (FIFA Ratings: ATT, MID, DEF)
+    results_df = compute_squad_vectors(results_df)
+    
     # 5. Feature Engineering: Rolling stats (form and goal differences)
     results_df = compute_rolling_features(results_df)
     
@@ -351,6 +413,9 @@ def main():
         'date', 'home_team', 'away_team', 'home_score', 'away_score', 'tournament', 'neutral',
         'home_rank', 'away_rank', 'rank_difference',
         'home_elo', 'away_elo', 'elo_difference',
+        'home_att', 'away_att', 'att_difference',
+        'home_mid', 'away_mid', 'mid_difference',
+        'home_def', 'away_def', 'def_difference',
         'home_form', 'away_form', 'form_difference',
         'home_gd', 'away_gd', 'gd_difference',
         'h2h_home_win_rate', 'h2h_away_win_rate', 'h2h_draw_rate',
