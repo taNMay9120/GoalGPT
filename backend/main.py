@@ -44,7 +44,8 @@ name_lookup = {}
 # Simple in-memory cache to prevent exceeding API-Football limits (100/day)
 cache = {
     "live-scores": {"data": None, "timestamp": None},
-    "news": {"data": None, "timestamp": None}
+    "news": {"data": None, "timestamp": None},
+    "matches": {} # format: {fixture_id: {"data": ..., "timestamp": ...}}
 }
 CACHE_TTL_MINUTES = 5
 
@@ -201,6 +202,11 @@ def get_live_scores():
         response.raise_for_status()
         data = response.json()
         
+        # Filter for World Cup matches as requested
+        if data.get("response"):
+            wc_matches = [m for m in data["response"] if "World Cup" in m["league"]["name"]]
+            data["response"] = wc_matches
+        
         # Cache and return
         cache["live-scores"]["data"] = data
         cache["live-scores"]["timestamp"] = now
@@ -222,6 +228,41 @@ def get_live_scores():
                 }
             ]
         }
+
+@app.get("/api/match/{fixture_id}")
+def get_match_details(fixture_id: int):
+    """
+    Fetches detailed match statistics, lineups, and events for a specific fixture.
+    """
+    now = datetime.now()
+    if fixture_id in cache["matches"]:
+        cached = cache["matches"][fixture_id]
+        if (now - cached["timestamp"]) < timedelta(minutes=15):
+            return cached["data"]
+            
+    if not API_FOOTBALL_KEY:
+        raise HTTPException(status_code=500, detail="API_FOOTBALL_KEY not found in backend/.env")
+        
+    url = f"https://v3.football.api-sports.io/fixtures?id={fixture_id}"
+    headers = {
+        "x-apisports-key": API_FOOTBALL_KEY,
+        "x-apisports-host": API_FOOTBALL_HOST
+    }
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        
+        cache["matches"][fixture_id] = {
+            "data": data,
+            "timestamp": now
+        }
+        return data
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching match details: {e}")
+        raise HTTPException(status_code=500, detail="Failed to fetch match details from API")
 
 @app.get("/api/news")
 def get_football_news():

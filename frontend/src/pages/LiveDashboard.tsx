@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Activity, Globe } from 'lucide-react';
 import { LiveMatchCard } from '../components/LiveMatchCard';
 import { NewsFeed } from '../components/NewsFeed';
+import { MatchDetailsModal } from '../components/MatchDetailsModal';
 
 export const LiveDashboard: React.FC = () => {
   const [matches, setMatches] = useState<any[]>([]);
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedFixtureId, setSelectedFixtureId] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,7 +78,7 @@ export const LiveDashboard: React.FC = () => {
             {matches.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {matches.map((m, idx) => (
-                  <LiveMatchCard key={m.fixture.id || idx} match={m} />
+                  <LiveMatchCard key={m.fixture.id || idx} match={m} onClick={() => setSelectedFixtureId(m.fixture.id)} />
                 ))}
               </div>
             ) : (
@@ -97,6 +99,13 @@ export const LiveDashboard: React.FC = () => {
           </div>
 
         </div>
+      )}
+
+      {selectedFixtureId && (
+        <MatchDetailsModal 
+          fixtureId={selectedFixtureId} 
+          onClose={() => setSelectedFixtureId(null)} 
+        />
       )}
     </div>
   );

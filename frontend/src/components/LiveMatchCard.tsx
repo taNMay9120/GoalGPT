@@ -22,13 +22,17 @@ interface MatchProps {
       away: number;
     };
   }
+  onClick?: () => void;
 }
 
-export const LiveMatchCard: React.FC<MatchProps> = ({ match }) => {
+export const LiveMatchCard: React.FC<MatchProps> = ({ match, onClick }) => {
   const isLive = match.fixture.status.short === '1H' || match.fixture.status.short === '2H' || match.fixture.status.short === 'HT';
 
   return (
-    <div className="bg-dark-card/50 backdrop-blur-sm border border-dark-border rounded-xl p-4 flex flex-col hover:border-brand-gold/30 transition-all duration-300">
+    <div 
+      onClick={onClick}
+      className={`bg-dark-card/50 backdrop-blur-sm border border-dark-border rounded-xl p-4 flex flex-col transition-all duration-300 ${onClick ? 'cursor-pointer hover:border-brand-gold/50 hover:shadow-lg hover:shadow-brand-gold/10' : 'hover:border-brand-gold/30'}`}
+    >
       <div className="flex justify-between items-center mb-4">
         <span className="text-xs text-dark-muted font-semibold uppercase tracking-wider">{match.league.name}</span>
         {isLive ? (

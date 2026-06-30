@@ -4,12 +4,7 @@ import { Send, ChevronRight, HelpCircle, Loader2 } from 'lucide-react';
 import { ComparisonDetails } from '../components/ComparisonDetails';
 import { SearchDropdown } from '../components/SearchDropdown';
 
-const POPULAR_TEAMS = [
-  'Argentina', 'Brazil', 'France', 'England', 'Spain',
-  'Germany', 'Italy', 'Netherlands', 'Portugal', 'Belgium',
-  'Uruguay', 'Croatia', 'Morocco', 'Senegal', 'USA', 'Mexico',
-  'Japan', 'South Korea', 'Australia'
-].sort();
+const ALL_TEAMS = ["Afghanistan","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antigua and Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia","Bosnia and Herzegovina","Botswana","Brazil","British Virgin Islands","Brunei","Bulgaria","Burkina Faso","Burundi","Cambodia","Cameroon","Canada","Cape Verde","Cayman Islands","Central African Republic","Chad","Chile","Colombia","Comoros","Congo","Congo DR","Cook Islands","Costa Rica","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Djibouti","Dominica","Dominican Republic","Ecuador","Egypt","El Salvador","England","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Faroe Islands","Fiji","Finland","France","Gabon","Gambia","Georgia","Germany","Ghana","Gibraltar","Greece","Grenada","Guam","Guatemala","Guinea","Guinea-Bissau","Guyana","Haiti","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iraq","Israel","Italy","Jamaica","Japan","Jordan","Kazakhstan","Kenya","Korea DPR","Korea Republic","Kosovo","Kuwait","Laos","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macau","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Mauritania","Mauritius","Mexico","Moldova","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nepal","Netherlands","New Caledonia","New Zealand","Nicaragua","Niger","Nigeria","Northern Ireland","Norway","Oman","Pakistan","Palestine","Panama","Papua New Guinea","Paraguay","Peru","Philippines","Poland","Portugal","Puerto Rico","Qatar","Republic of Ireland","Romania","Russia","Rwanda","Samoa","San Marino","Saudi Arabia","Scotland","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Sudan","Spain","Sri Lanka","Sudan","Suriname","Sweden","Switzerland","Syria","Tahiti","Tajikistan","Tanzania","Thailand","Timor-Leste","Togo","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Turks and Caicos Islands","USA","Uganda","Ukraine","United Arab Emirates","United States Virgin Islands","Uruguay","Uzbekistan","Vanuatu","Venezuela","Vietnam","Wales","Yemen","Zambia","Zimbabwe"];
 
 export const Predictor: React.FC = () => {
   const [team1, setTeam1] = useState('Brazil');
@@ -24,7 +19,7 @@ export const Predictor: React.FC = () => {
       .then((data) => setTeamsList(data))
       .catch((err) => {
         console.error("Failed to load dynamic teams list:", err);
-        // Fallback to POPULAR_TEAMS is handled inline
+        // Fallback to ALL_TEAMS is handled inline
       });
   }, []);
 
@@ -66,7 +61,7 @@ export const Predictor: React.FC = () => {
               label="Home Team (Team 1)"
               color="gold"
               value={team1}
-              teams={teamsList.length > 0 ? teamsList : POPULAR_TEAMS}
+              teams={teamsList.length > 0 ? teamsList : ALL_TEAMS}
               onChange={setTeam1}
               exclude={team2}
             />
@@ -83,7 +78,7 @@ export const Predictor: React.FC = () => {
               label="Away Team (Team 2)"
               color="green"
               value={team2}
-              teams={teamsList.length > 0 ? teamsList : POPULAR_TEAMS}
+              teams={teamsList.length > 0 ? teamsList : ALL_TEAMS}
               onChange={setTeam2}
               exclude={team1}
             />
