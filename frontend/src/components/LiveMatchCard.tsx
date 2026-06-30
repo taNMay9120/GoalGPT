@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 interface MatchProps {
   match: {
